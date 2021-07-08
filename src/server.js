@@ -1,9 +1,10 @@
 const Hapi = require('@hapi/hapi');
-const notes = require('./api/songs');
-const NotesService = require('./services/inmemory/SongsService');
+const songs = require('./api/songs');
+const SongsService = require('./services/inmemory/SongsService');
+const SongsValidator = require('./validator/songs');
 
 const init = async () => {
-  const notesService = new NotesService();
+  const songsService = new SongsService();
   const server = Hapi.server({
     port: 5000,
     host: process.env.NODE_ENV !== 'production' ? 'localhost' : '0.0.0.0',
@@ -15,9 +16,10 @@ const init = async () => {
   });
 
   await server.register({
-    plugin: notes,
+    plugin: songs,
     options: {
-      service: notesService,
+      service: songsService,
+      validator: SongsValidator,
     },
   });
 
