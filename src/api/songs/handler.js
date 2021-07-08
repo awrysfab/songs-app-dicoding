@@ -41,10 +41,15 @@ class songsHandler {
 
   getSongsHandler() {
     const songs = this._service.getSongs();
+    const songsResponse = songs.map((item) => ({
+      id: item.id,
+      title: item.title,
+      performer: item.performer,
+    }));
     return {
       status: 'success',
       data: {
-        songs,
+        songs: songsResponse,
       },
     };
   }
