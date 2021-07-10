@@ -64,7 +64,8 @@ class PlaylistsHandler {
       const { playlistId } = request.params;
       const { id: credentialId } = request.auth.credentials;
 
-      await this._service.deletePlaylistById(playlistId, credentialId);
+      await this._service.verifyNoteOwner(playlistId, credentialId);
+      await this._service.deletePlaylistById(playlistId);
       return {
         status: 'success',
         message: 'Playlist berhasil dihapus',
