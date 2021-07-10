@@ -1,7 +1,6 @@
 const ClientError = require('../../exceptions/ClientError');
 
-/* eslint-disable no-underscore-dangle */
-class songsHandler {
+class SongsHandler {
   constructor(service, validator) {
     this._service = service;
     this._validator = validator;
@@ -154,4 +153,4 @@ class songsHandler {
   }
 }
 
-module.exports = songsHandler;
+module.exports = SongsHandler;
