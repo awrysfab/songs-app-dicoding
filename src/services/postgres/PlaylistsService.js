@@ -5,8 +5,9 @@ const NotFoundError = require('../../exceptions/NotFoundError');
 const AuthorizationError = require('../../exceptions/AuthorizationError');
 
 class PlaylistsService {
-  constructor() {
+  constructor(collaborationService) {
     this._pool = new Pool();
+    this._collaborationService = collaborationService;
   }
 
   async addPlaylist({ name, owner }) {
@@ -23,11 +24,19 @@ class PlaylistsService {
   }
 
   async getPlaylists(owner) {
+    // const query = {
+    //   text: `SELECT playlists.id, playlists.name, users.username
+    //   FROM playlists
+    //   INNER JOIN users ON playlists.owner=users.id
+    //   WHERE playlists.owner = $1;`,
+    //   values: [owner],
+    // };
     const query = {
-      text: `SELECT playlists.id, playlists.name, users.username 
-      FROM playlists 
-      INNER JOIN users ON playlists.owner=users.id
-      WHERE playlists.owner = $1;`,
+      text: `SELECT playlists.id, playlists.name, users.username FROM playlists
+      LEFT JOIN collaborations ON collaborations.playlist_id = playlists.id
+      LEFT JOIN users ON playlists.owner=users.id
+      WHERE playlists.owner = $1 OR collaborations.user_id = $1
+      GROUP BY playlists.id, users.id`,
       values: [owner],
     };
     const result = await this._pool.query(query);
@@ -108,7 +117,7 @@ class PlaylistsService {
     return result.rows;
   }
 
-  async verifyNoteOwner(id, owner) {
+  async verifyPlaylistOwner(id, owner) {
     const query = {
       text: 'SELECT * FROM playlists WHERE id = $1',
       values: [id],
@@ -120,6 +129,21 @@ class PlaylistsService {
     const note = result.rows[0];
     if (note.owner !== owner) {
       throw new AuthorizationError('Anda tidak berhak mengakses resource ini');
+    }
+  }
+
+  async verifyPlaylistAccess(noteId, userId) {
+    try {
+      await this.verifyPlaylistOwner(noteId, userId);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      try {
+        await this._collaborationService.verifyCollaborator(noteId, userId);
+      } catch {
+        throw error;
+      }
     }
   }
 }
