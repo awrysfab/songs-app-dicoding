@@ -24,6 +24,10 @@ const collaborations = require('./api/collaborations');
 const CollaborationsService = require('./services/postgres/CollaborationsService');
 const CollaborationsValidator = require('./validator/collaborations');
 
+const _exports = require('./api/exports');
+const ProducerService = require('./services/rabbitmq/ProducerService');
+const ExportsValidator = require('./validator/exports');
+
 const ClientError = require('./exceptions/ClientError');
 
 const init = async () => {
@@ -105,6 +109,14 @@ const init = async () => {
         validator: CollaborationsValidator,
       },
     },
+    {
+      plugin: _exports,
+      options: {
+        service: ProducerService,
+        playlistsService,
+        validator: ExportsValidator,
+      },
+    },
   ]);
 
   server.ext('onPreResponse', (request, h) => {
@@ -115,7 +127,6 @@ const init = async () => {
         message: response.message,
       });
       newResponse.code(response.statusCode);
-      console.error(response);
       return newResponse;
     }
     if (response instanceof Error) {
@@ -124,6 +135,7 @@ const init = async () => {
         message: 'Maaf, terjadi kesalahan.',
       });
       newResponse.code(response.output.statusCode);
+      console.error(response);
       return newResponse;
     }
     return response.continue || response;
