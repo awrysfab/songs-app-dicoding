@@ -24,6 +24,8 @@ const collaborations = require('./api/collaborations');
 const CollaborationsService = require('./services/postgres/CollaborationsService');
 const CollaborationsValidator = require('./validator/collaborations');
 
+const ClientError = require('./exceptions/ClientError');
+
 const init = async () => {
   const usersService = new UsersService();
   const authenticationsService = new AuthenticationsService();
@@ -104,6 +106,28 @@ const init = async () => {
       },
     },
   ]);
+
+  server.ext('onPreResponse', (request, h) => {
+    const { response } = request;
+    if (response instanceof ClientError) {
+      const newResponse = h.response({
+        status: 'fail',
+        message: response.message,
+      });
+      newResponse.code(response.statusCode);
+      console.error(response);
+      return newResponse;
+    }
+    if (response instanceof Error) {
+      const newResponse = h.response({
+        status: 'error',
+        message: 'Maaf, terjadi kesalahan.',
+      });
+      newResponse.code(response.output.statusCode);
+      return newResponse;
+    }
+    return response.continue || response;
+  });
 
   await server.start();
   console.log(`Server berjalan pada ${server.info.uri}`);
